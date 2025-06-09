@@ -1,9 +1,9 @@
 const config = {
     host: "localhost",
-    database: "alumnos",
+    database: "TP10",
     user: "postgres",
-    passwoord: "root",
-    port: "3000"
+    password: "root",
+    port: "5432"
 }
 
 export default config;
