@@ -1,6 +1,6 @@
 import express  from "express"; // hacer npm i express
 import cors     from "cors";    // hacer npm i cors
-import config from './configs/db-config.js'
+import config from './src/configs/db-configs.js'
 import pkg from 'pg'
 
 
@@ -27,21 +27,19 @@ app.use(express.json()); // Middleware para parsear y comprender JSON
 //
 
 app.get('/api/alumnos/', async (req, res) => {
-
-    try {
-        const client = new Client(config);
-        await client.connect();
-        let sql = 'SELECT * FROM alumos';
-        let result = await client.query(sql);
-        res.status(200).send;
-        console.log(result.rows)
-      } catch (error) {
-        console.error(error);
-        res.status(500).send;
-      }
-      await client.end();
-      
-},
+  const client = new Client(config);
+  try {
+    await client.connect();
+    const sql = 'SELECT * FROM alumnos';
+    const result = await client.query(sql);
+    res.status(200).send(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error en el servidor');
+  } finally {
+    await client.end();
+  }
+});
 
 // app.get('/api/alumnos/:id', async (req, res) => {...}
 
@@ -59,8 +57,5 @@ app.get('/api/alumnos/', async (req, res) => {
 //
 
 app.listen(port, () => {
-
-    console.log(`Example app listening on port ${port}`)
-
-})
-)
+  console.log(`Example app listening on port ${port}`);
+});

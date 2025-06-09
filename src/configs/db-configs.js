@@ -3,7 +3,7 @@ const config = {
     database: "alumnos",
     user: "postgres",
     passwoord: "root",
-    port: "5432"
+    port: "3000"
 }
 
 export default config;

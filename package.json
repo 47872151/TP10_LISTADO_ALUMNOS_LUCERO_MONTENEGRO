@@ -1,9 +1,11 @@
 {
   "name": "tp10_listado_alumnos_lucero_montenegro",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "index.js",
   "scripts": {
+    "server": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
