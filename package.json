@@ -15,5 +15,12 @@
   "bugs": {
     "url": "https://github.com/47872151/TP10_LISTADO_ALUMNOS_LUCERO_MONTENEGRO/issues"
   },
-  "homepage": "https://github.com/47872151/TP10_LISTADO_ALUMNOS_LUCERO_MONTENEGRO#readme"
+  "homepage": "https://github.com/47872151/TP10_LISTADO_ALUMNOS_LUCERO_MONTENEGRO#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "http-status-codes": "^2.3.0",
+    "nodemon": "^3.1.10",
+    "pg": "^8.16.0"
+  }
 }
