@@ -1,8 +1,8 @@
 const config = {
-    host: "localhost",
-    database: "TP10",
-    user: "postgres",
-    password: "root",
+    host: "aws-0-us-east-2.pooler.supabase.com",
+    database: "postgres",
+    user: "postgres.zqygkkykumsitxvrxbdz",
+    password: "TP10LISTADO",
     port: "5432"
 }
 
