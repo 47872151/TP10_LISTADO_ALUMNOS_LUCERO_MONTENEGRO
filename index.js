@@ -104,7 +104,33 @@ app.put('/api/alumnos', async (req, res) => {
   await client.end();
 });
 
-app.delete('/api/alumnos/:id', async (req, res) => {});
+app.delete('/api/alumnos/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id))
+  {
+    res.status(400).send('id inválido');
+
+  } 
+  const client = new Client(config);
+  try {
+    await client.connect();
+    const sql = 'SELECT * FROM alumnos WHERE id = $1';
+    const result = await client.query(sql, [id]);
+
+    if (result.rows.length === 0)
+    {
+      res.status(404).send('Alumno no encontrado');
+    }
+    const sqlDelete = 'DELETE FROM alumnos WHERE id = $1';
+    await client.query(sqlDelete, [id]);
+    res.status(200).send('Alumno eliminado');
+  }
+  catch (error) 
+  {
+    res.status(500).send(error.message);
+  }
+  await client.end();
+});
 
 //
 
