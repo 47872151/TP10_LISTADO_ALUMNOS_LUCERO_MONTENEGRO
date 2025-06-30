@@ -1,23 +1,24 @@
-import express  from "express"; // hacer npm i express
-import cors     from "cors";    // hacer npm i cors
-import config from './src/configs/db-configs.js'
-import pkg from 'pg';
-//hacer npm nodemon para que se recargue solo
-// import AlumnoRouter from "./src/controllers/alumno-controller.js"
+import express from 'express'; // npm i express
+import cors from 'cors';       // npm i cors
+import config from './src/configs/db-configs.js';
+import pkg from 'pg';          // npm i pg
+import AlumnoRouter from './src/controllers/alumno-controller.js'; //
 
-const { Pool }  = pkg;
-const app  = express();
+const { Pool } = pkg;
+const app = express();
 const port = 3000;
 
-// Agrego los Middlewares
+// Middlewares
+app.use(cors());        
+app.use(express.json());
 
-app.use(cors());         // Middleware de CORS
-app.use(express.json()); // Middleware para parsear y comprender JSON
+// Rutas
+app.use(AlumnoRouter);   
 
+const pool = new Pool(config);
+pool.connect();
 
-
-
-// Inicio el Server y lo pongo a escuchar.
+// Inicio el server
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
 });
