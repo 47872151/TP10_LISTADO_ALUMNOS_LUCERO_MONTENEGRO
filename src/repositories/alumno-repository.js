@@ -1,94 +1,83 @@
-import DBconfig from '../../configs/dbConfig.js';
-import pkg from 'pg';
-const { Client } = pkg;
-import { validarID, validarNombre } from '../helpers/validaciones.js';
+import pool from '../configs/db-configs.js';
+import { validarID, validarText } from '../helpers/validaciones.js';
 
-export default class ProvinceRepository {
-  getAllAsync = async () => {
-    let returnArray = null;
-    const client = new Client(DBconfig);
+export default class AlumnoRepository {
+  async getAllAsync() {
     try {
-      await client.connect();
-      const sql = 'SELECT * FROM provinces';
-      const result = await client.query(sql);
-      await client.end();
-      returnArray = result.rows;
+      const result = await pool.query('SELECT * FROM alumnos');
+      return result.rows;
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      throw new Error('Error al obtener alumnos');
     }
-    return returnArray;
-  };
+  }
 
-  getByIdAsync = async (id) => {
-    let returnObj = null;
+  async getByIDAsync(id) {
     if (!validarID(id)) throw new Error('ID inválido');
-    const client = new Client(DBconfig);
-    try {
-      await client.connect();
-      const sql = 'SELECT * FROM provinces WHERE id = $1';
-      const result = await client.query(sql, [id]);
-      await client.end();
-      if (result.rows.length > 0) returnObj = result.rows[0];
-    } catch (error) {
-      console.log(error);
-    }
-    return returnObj;
-  };
 
-  createAsync = async (entity) => {
-    let returnObj = null;
-    const { nombre } = entity;
-    if (!validarNombre(nombre)) throw new Error('Nombre inválido');
-    const client = new Client(DBconfig);
     try {
-      await client.connect();
-      const sql = 'INSERT INTO provinces (nombre) VALUES ($1) RETURNING *';
-      const result = await client.query(sql, [nombre]);
-      await client.end();
-      returnObj = result.rows[0];
+      const result = await pool.query('SELECT * FROM alumnos WHERE id = $1', [id]);
+      return result.rows.length > 0 ? result.rows[0] : null;
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      throw new Error('Error al obtener alumno por ID');
     }
-    return returnObj;
-  };
+  }
 
-  updateAsync = async (entity) => {
-    let returnObj = null;
-    const { id, nombre } = entity;
+  async createAsync(entity) {
+    const { nombre, apellido, id_curso, fecha_nacimiento, hace_deportes } = entity;
+
+    if (!validarText(nombre)) throw new Error('Nombre inválido');
+    if (!validarText(apellido)) throw new Error('Apellido inválido');
+
+    try {
+      const result = await pool.query(
+        `INSERT INTO alumnos (nombre, apellido, id_curso, fecha_nacimiento, hace_deportes)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [nombre, apellido, id_curso, fecha_nacimiento, hace_deportes]
+      );
+      return result.rows[0];
+    } catch (error) {
+      console.error(error);
+      throw new Error('Error al crear alumno');
+    }
+  }
+
+  async updateAsync(entity) {
+    const { id, nombre, apellido, id_curso, fecha_nacimiento, hace_deportes } = entity;
+
     if (!validarID(id)) throw new Error('ID inválido');
-    if (!validarNombre(nombre)) throw new Error('Nombre inválido');
+    if (!validarText(nombre)) throw new Error('Nombre inválido');
+    if (!validarText(apellido)) throw new Error('Apellido inválido');
 
-    const client = new Client(DBconfig);
     try {
-      await client.connect();
-      const existe = await client.query('SELECT * FROM provinces WHERE id = $1', [id]);
+      const existe = await pool.query('SELECT * FROM alumnos WHERE id = $1', [id]);
       if (existe.rows.length === 0) return null;
 
-      const sql = 'UPDATE provinces SET nombre = $1 WHERE id = $2 RETURNING *';
-      const result = await client.query(sql, [nombre, id]);
-      await client.end();
-      returnObj = result.rows[0];
+      const result = await pool.query(
+        `UPDATE alumnos SET nombre = $1, apellido = $2, id_curso = $3,
+         fecha_nacimiento = $4, hace_deportes = $5 WHERE id = $6 RETURNING *`,
+        [nombre, apellido, id_curso, fecha_nacimiento, hace_deportes, id]
+      );
+      return result.rows[0];
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      throw new Error('Error al actualizar alumno');
     }
-    return returnObj;
-  };
+  }
 
-  deleteByIdAsync = async (id) => {
-    let deleted = false;
+  async deleteByIDAsync(id) {
     if (!validarID(id)) throw new Error('ID inválido');
-    const client = new Client(DBconfig);
+
     try {
-      await client.connect();
-      const existe = await client.query('SELECT * FROM provinces WHERE id = $1', [id]);
+      const existe = await pool.query('SELECT * FROM alumnos WHERE id = $1', [id]);
       if (existe.rows.length === 0) return null;
 
-      await client.query('DELETE FROM provinces WHERE id = $1', [id]);
-      await client.end();
-      deleted = true;
+      await pool.query('DELETE FROM alumnos WHERE id = $1', [id]);
+      return true;
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      throw new Error('Error al eliminar alumno');
     }
-    return deleted;
-  };
+  }
 }

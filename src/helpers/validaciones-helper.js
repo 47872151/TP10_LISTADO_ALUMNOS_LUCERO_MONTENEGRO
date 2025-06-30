@@ -1,9 +1,5 @@
-export function validarNombre(nombre) {
-    return typeof nombre === 'string' && nombre.length >= 3;
-  }
-  
-  export function validarApellido(apellido) {
-    return typeof apellido === 'string' && apellido.length >= 3;
+export function validarText(text) {
+    return typeof text === 'string' && text.length >= 3;
   }
   
   export function validarID(id) {
