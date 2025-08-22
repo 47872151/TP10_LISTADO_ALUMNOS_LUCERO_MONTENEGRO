@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import AlumnoService from '../services/alumno-services.js';
+import multer from 'multer';
+import fs from 'fs';
+import path from 'path';
 
 const router = Router();
 const svc = new AlumnoService();
@@ -12,9 +15,22 @@ router.get('/api/alumnos', async (req, res) => {
     res.status(StatusCodes.OK).json(alumnos);
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: error.message });
+  const multer = require('multer');
+  const upload = multer({ dest: 'uploads/' });
   }
 });
 
+  // Endpoint para subir archivos de alumnos
+  // POST /alumnos/upload
+  module.exports.uploadArchivo = [
+    upload.single('archivo'),
+    (req, res) => {
+      if (!req.file) {
+        return res.status(400).json({ mensaje: 'No se subió ningún archivo.' });
+      }
+      res.json({ mensaje: 'Archivo subido correctamente', archivo: req.file });
+    }
+  ];
 // GET BY ID
 router.get('/api/alumnos/:id', async (req, res) => {
   try {
@@ -57,6 +73,79 @@ router.delete('/api/alumnos/:id', async (req, res) => {
     res.status(StatusCodes.OK).json({ message: 'Alumno eliminado correctamente' });
   } catch (error) {
     res.status(StatusCodes.BAD_REQUEST).json({ error: error.message });
+  }
+});
+
+// BEGIN ---------- multer config ----------
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const id  = req.params.id;
+    const dir = path.join(process.cwd(), 'uploads', 'alumnos', id);
+    // Crear carpeta si no existe
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    // conservar extensión original si viene (jpg, png, etc)
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, 'photo' + ext);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Solo se permiten archivos de imagen'), false);
+    }
+    cb(null, true);
+  }
+});
+// END ---------- multer config ----------
+
+// ---------- NUEVA RUTA: subir foto ----------
+router.post('/:id/photo', upload.single('image'), async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    // (opcional) verificar que el alumno exista antes de guardar
+    const alumno = await currentService.getByIdAsync(id);
+    if (!alumno) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .send(`No se encontró el alumno (id:${id}).`);
+    }
+
+    if (!req.file) {
+      return res.status(StatusCodes.BAD_REQUEST)
+        .send('No se recibió el archivo. Usa el campo "image".');
+    }
+
+    // Ruta relativa y URL pública (ver sección 3)
+    const relativePath = path.join('uploads', 'alumnos', id, req.file.filename);
+    const publicUrl = `/static/alumnos/${id}/${req.file.filename}`;
+
+    // Actualizo el Registro
+    alumno.imagen = publicUrl;
+    const rowsAffected = await currentService.updateAsync(alumno);
+    if (rowsAffected != 0){
+        res.status(StatusCodes.CREATED).json(alumno);
+    } else {
+        res.status(StatusCodes.NOT_FOUND).send(`No se encontro la entidad (id:${entity.id}).`);
+    }
+    
+    /*
+    return res.status(StatusCodes.CREATED).json({
+      id,
+      filename: req.file.filename,
+      path: relativePath,
+      url: publicUrl
+    });
+    */
+  } catch (err) {
+    console.error(err);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send('Error al subir la imagen.');
   }
 });
 
