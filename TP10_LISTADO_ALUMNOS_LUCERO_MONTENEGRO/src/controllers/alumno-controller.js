@@ -20,17 +20,6 @@ router.get('/api/alumnos', async (req, res) => {
   }
 });
 
-  // Endpoint para subir archivos de alumnos
-  // POST /alumnos/upload
-  module.exports.uploadArchivo = [
-    upload.single('archivo'),
-    (req, res) => {
-      if (!req.file) {
-        return res.status(400).json({ mensaje: 'No se subió ningún archivo.' });
-      }
-      res.json({ mensaje: 'Archivo subido correctamente', archivo: req.file });
-    }
-  ];
 // GET BY ID
 router.get('/api/alumnos/:id', async (req, res) => {
   try {
