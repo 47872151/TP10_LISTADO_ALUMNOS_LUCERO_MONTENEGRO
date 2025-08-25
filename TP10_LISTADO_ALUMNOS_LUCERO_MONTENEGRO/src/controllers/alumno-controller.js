@@ -83,23 +83,31 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  limits: { fileSize: 5 * 1024 * 1024 }, 
   fileFilter: (req, file, cb) => {
-    if (!file.mimetype.startsWith('image/')) {
+    console.log('Tipo MIME recibido:', file.mimetype, 'Nombre original:', file.originalname);
+
+    // Validar por extensión, no solo por mimetype
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowedExt = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
+
+    if (!allowedExt.includes(ext)) {
+      console.log('❌ Archivo rechazado por extensión:', ext);
       return cb(new Error('Solo se permiten archivos de imagen'), false);
     }
+
     cb(null, true);
   }
 });
 // END ---------- multer config ----------
 
 // ---------- NUEVA RUTA: subir foto ----------
-router.post('/:id/photo', upload.single('image'), async (req, res) => {
+router.post('/api/alumnos/:id/photo', upload.single('image'), async (req, res) => {
   try {
     const id = req.params.id;
 
-    // (opcional) verificar que el alumno exista antes de guardar
-    const alumno = await currentService.getByIdAsync(id);
+    // Verificar que el alumno exista
+    const alumno = await svc.getByIDAsync(parseInt(id));
     if (!alumno) {
       return res
         .status(StatusCodes.NOT_FOUND)
@@ -111,31 +119,23 @@ router.post('/:id/photo', upload.single('image'), async (req, res) => {
         .send('No se recibió el archivo. Usa el campo "image".');
     }
 
-    // Ruta relativa y URL pública (ver sección 3)
+    // Ruta relativa y URL pública
     const relativePath = path.join('uploads', 'alumnos', id, req.file.filename);
     const publicUrl = `/static/alumnos/${id}/${req.file.filename}`;
 
     // Actualizo el Registro
     alumno.imagen = publicUrl;
-    const rowsAffected = await currentService.updateAsync(alumno);
-    if (rowsAffected != 0){
+    const actualizado = await svc.updateAsync(alumno);
+    if (actualizado){
         res.status(StatusCodes.CREATED).json(alumno);
     } else {
-        res.status(StatusCodes.NOT_FOUND).send(`No se encontro la entidad (id:${entity.id}).`);
+        res.status(StatusCodes.NOT_FOUND).send(`No se encontró la entidad (id:${id}).`);
     }
-    
-    /*
-    return res.status(StatusCodes.CREATED).json({
-      id,
-      filename: req.file.filename,
-      path: relativePath,
-      url: publicUrl
-    });
-    */
   } catch (err) {
-    console.error(err);
+    console.error('Error real:', err); // <-- Esto mostrará el error real en consola
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send('Error al subir la imagen.');
   }
 });
+
 
 export default router;

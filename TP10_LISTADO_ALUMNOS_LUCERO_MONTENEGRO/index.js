@@ -1,10 +1,8 @@
-import express from 'express'; // npm i express
-import cors from 'cors';       // npm i cors
-import config from './src/configs/db-configs.js';
-import pkg from 'pg';          // npm i pg
-import AlumnoRouter from './src/controllers/alumno-controller.js'; //
 
-const { Pool } = pkg;
+import AlumnoRouter from './src/controllers/alumno-controller.js';
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
 const app = express();
 const port = 3000;
 
@@ -12,11 +10,11 @@ const port = 3000;
 app.use(cors());        
 app.use(express.json());
 
-// Rutas
-app.use(AlumnoRouter);   
+// Servir imágenes estáticas de alumnos
+app.use('/static/alumnos', express.static(path.join(process.cwd(), 'uploads', 'alumnos')));
 
-const pool = new Pool(config);
-pool.connect();
+// Rutas
+app.use(AlumnoRouter);
 
 // Inicio el server
 app.listen(port, () => {
