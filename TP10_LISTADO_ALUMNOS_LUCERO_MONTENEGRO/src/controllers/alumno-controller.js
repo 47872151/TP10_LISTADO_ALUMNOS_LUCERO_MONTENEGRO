@@ -4,9 +4,29 @@ import AlumnoService from '../services/alumno-services.js';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
+import { randomUUID } from 'crypto';
+
 
 const router = Router();
 const svc = new AlumnoService();
+
+function sanitizeFilename(name = '') {
+  const base = path.basename(name);
+  return base.replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
+function nowTimestamp(d = new Date()) {
+  const yyyy = d.getFullYear();
+  const MM = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const HH = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  const SSS = String(d.getMilliseconds()).padStart(3, '0');
+  return `${yyyy}${MM}${dd}${HH}${mm}${ss}${SSS}`;
+}
+
+
 
 // GET ALL
 router.get('/api/alumnos', async (req, res) => {
@@ -68,37 +88,35 @@ router.delete('/api/alumnos/:id', async (req, res) => {
 // BEGIN ---------- multer config ----------
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const id  = req.params.id;
+    const id = req.params.id;
     const dir = path.join(process.cwd(), 'uploads', 'alumnos', id);
-    // Crear carpeta si no existe
+    // Create directory if it doesn't exist
     fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);
   },
   filename: (req, file, cb) => {
-    // conservar extensión original si viene (jpg, png, etc)
-    const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, 'photo' + ext);
+    const ext = path.extname(file.originalname).toLowerCase();
+    const sanitizedFilename = sanitizeFilename(file.originalname || `photo${ext}`);
+    const timestamp = nowTimestamp();
+    const uniqueName = `${req.params.id}-${timestamp}-${sanitizedFilename}`;
+    cb(null, uniqueName);
   }
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, 
+  limits: { fileSize: 5 * 1024 * 1024 },  // Max file size: 5MB
   fileFilter: (req, file, cb) => {
-    console.log('Tipo MIME recibido:', file.mimetype, 'Nombre original:', file.originalname);
-
-    // Validar por extensión, no solo por mimetype
     const ext = path.extname(file.originalname).toLowerCase();
     const allowedExt = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
 
     if (!allowedExt.includes(ext)) {
-      console.log('❌ Archivo rechazado por extensión:', ext);
       return cb(new Error('Solo se permiten archivos de imagen'), false);
     }
-
     cb(null, true);
   }
 });
+
 // END ---------- multer config ----------
 
 // ---------- NUEVA RUTA: subir foto ----------
@@ -106,33 +124,27 @@ router.post('/api/alumnos/:id/photo', upload.single('image'), async (req, res) =
   try {
     const id = req.params.id;
 
-    // Verificar que el alumno exista
     const alumno = await svc.getByIDAsync(parseInt(id));
     if (!alumno) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .send(`No se encontró el alumno (id:${id}).`);
+      return res.status(StatusCodes.NOT_FOUND).send(`No se encontró el alumno (id:${id}).`);
     }
 
     if (!req.file) {
-      return res.status(StatusCodes.BAD_REQUEST)
-        .send('No se recibió el archivo. Usa el campo "image".');
+      return res.status(StatusCodes.BAD_REQUEST).send('No se recibió el archivo. Usa el campo "image".');
     }
-
-    // Ruta relativa y URL pública
     const relativePath = path.join('uploads', 'alumnos', id, req.file.filename);
     const publicUrl = `/static/alumnos/${id}/${req.file.filename}`;
 
-    // Actualizo el Registro
     alumno.imagen = publicUrl;
     const actualizado = await svc.updateAsync(alumno);
-    if (actualizado){
-        res.status(StatusCodes.CREATED).json(alumno);
+    if (actualizado) {
+      return res.status(StatusCodes.CREATED).json({ id, filename: req.file.filename, url: publicUrl });
     } else {
-        res.status(StatusCodes.NOT_FOUND).send(`No se encontró la entidad (id:${id}).`);
+      fs.rmSync(path.join(process.cwd(), 'uploads', 'alumnos', id, req.file.filename), { force: true });
+      return res.status(StatusCodes.NOT_FOUND).send(`No se pudo actualizar el alumno (id:${id}).`);
     }
   } catch (err) {
-    console.error('Error real:', err); // <-- Esto mostrará el error real en consola
+    console.error('Error real:', err);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send('Error al subir la imagen.');
   }
 });
